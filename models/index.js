@@ -1,7 +1,7 @@
 var Sequelize = require('sequelize');
 var marked = require('marked');
 
-var db = new Sequelize('postgres://localhost:5432/tdd_wikistack', {
+var db = new Sequelize('postgres://localhost:5432/tddwiki', {
     logging: false
 });
 
