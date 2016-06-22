@@ -9,7 +9,8 @@ var models = require('../models');
 var Page = models.Page;
 var User = models.User;
 chai.use(spies);
-
+chai.should();
+chai.use(require('chai-things'));
 
 describe('Page model', function () {
 
@@ -48,19 +49,6 @@ describe('Page model', function () {
         .catch(done);
       });
 
-      // beforeEach(function () {
-      // return Promise.all([
-      // Page.create({
-      //   title: 'foo',
-      //   content: 'bar',
-      //   tags: ['foo', 'bar']
-      // }),
-      //   Page.create({
-      //     title: 'foo2',
-      //     content: 'bar2',
-      //     tags: ['foo2', 'bar']
-      //   })
-      // ]);
       it('gets pages with the search tag', function (done) {
         Page.findByTag('bar')
         .then(function (pages) {
@@ -69,6 +57,7 @@ describe('Page model', function () {
         })
         .catch(done);
       });
+
       it('does not get pages without the search tag', function (done) {
         Page.findByTag('tag1')
         .then(function (pages) {
@@ -96,26 +85,26 @@ describe('Page model', function () {
   describe('Instance methods', function () {
     describe('findSimilar', function () {
 
-      var pagePromise;
+      var pagesPromise;
       beforeEach(function() {
-        pagePromise = Promise.all([
-          Page.create({
-            title: 'foo',
-            content: 'bar',
-            tags: ['foo', 'bar']
-          }),
-          Page.create({
-            title: 'foo2',
-            content: 'bar',
-            tags: ['foo', 'tag1']
-          }),
-          Page.create({
-            title: 'foo3',
-            content: 'bar',
-            tags: ['tag2', 'tag3']
-          })
-          ])
-      });
+        pagesPromise = Promise.all([
+                                   Page.create({
+                                    title: 'foo',
+                                    content: 'bar',
+                                    tags: ['foo', 'bar']
+                                  }),
+                                   Page.create({
+                                    title: 'foo2',
+                                    content: 'bar',
+                                    tags: ['foo', 'tag1']
+                                  }),
+                                   Page.create({
+                                    title: 'foo3',
+                                    content: 'bar',
+                                    tags: ['tag2', 'tag3']
+                                  })
+                                   ]);
+      }); // end beforeEach
 
       afterEach(function (done) {
         Page.destroy({
@@ -129,88 +118,134 @@ describe('Page model', function () {
         .catch(done);
       });
 
-      it('never gets itself', function(done) {
-        pagePromise.then(function(pages) {
-          return pages[0];
-        }).then(function(page) {
-          page.findSimilar()
-            .then(function (pages) {
-              expect(pages[0].title).to.eql('foo2');
-              expect(pages).to.have.lengthOf(1);
-              done();
-            })
-            .catch(done);
+      it('never gets itself', function (done) {
+        pagesPromise
+        .then(function (pages) {
+          pages[0].findSimilar()
+          .then(function (resultPages) {
+            resultPages.should.not.include(pages[0]);
+            expect(resultPages[0].title).to.eql('foo2');
+            expect(resultPages).to.have.lengthOf(1);
+            done();
+          })
+          .catch(done);
         });
       });
-      it('gets other pages with any common tags', function(done) {
-        pagePromise.then(function(pages) {
-          return pages[0];
-        }).then(function(page) {
-          page.findSimilar()
-            .then(function (pages) {
-              expect(pages[0].title).to.eql('foo2');
-              expect(pages).to.have.lengthOf(1);
-              done();
-            })
-            .catch(done);
+
+      it('gets other pages with any common tags', function (done) {
+        pagesPromise
+        .then(function (pages) {
+          pages[0].findSimilar()
+          .then(function (resultPages) {
+            expect(resultPages[0].title).to.eql('foo2');
+            expect(resultPages).to.have.lengthOf(1);
+            done();
+          })
+          .catch(done);
         });
       });
-      it('does not get other pages without any common tags', function(done) {
-        pagePromise.then(function(pages) {
-          return pages[0];
-        }).then(function(page) {
-          page.findSimilar()
-            .then(function (pages) {
-              expect(pages[0].title).to.eql('foo2');
-              expect(pages).to.have.lengthOf(1);
-              done();
-            })
-            .catch(done);
+      it('does not get other pages without any common tags', function (done) {
+        pagesPromise
+        .then(function (pages) {
+          pages[0].findSimilar()
+          .then(function (resultPages) {
+            resultPages.should.not.include(pages[2]);
+            expect(resultPages[0].title).to.eql('foo2');
+            expect(resultPages).to.have.lengthOf(1);
+            done();
+          })
+          .catch(done);
         });
       });
     });
   });
 
   describe('Validations', function () {
-    var pagePromise;
-    beforeEach(function () {
-        pagePromise = Page.build({
-          title: null,
-          content: null,
-          status: 'something'
-        });
-      });
+
+    var page;
+    beforeEach(function (done) {
+      page = Page.build({});
+      done();
+    });
 
     it('errors without title', function (done) {
-      pagePromise
-      .then(function(page) {
-        return page.validate();
+      page.validate(function (page) {
+        return page;
       })
       .then(function (err) {
         expect(err).to.exist;
         expect(err.errors).to.exist;
         expect(err.errors[0].path).to.equal('title');
         done();
-      })
+      });
     });
-    it('errors without content');
-    it('errors given an invalid status');
+
+    it('errors without content', function (done) {
+      page.validate(function (page) {
+        return page;
+      })
+      .then(function (err) {
+        expect(err).to.exist;
+        expect(err.errors).to.exist;
+        expect(err.errors[0].path).to.equal('title');
+        done();
+      });
+    });
+
+    it('errors given an invalid status', function (done) {
+      page.status = 'wrong'
+      page.validate(function (page) {
+        return page;
+      })
+      .then(function (err) {
+        expect(err).to.exist;
+        expect(err.errors).to.exist;
+        expect(err.errors[0].path).to.equal('title');
+        done();
+      });
+    });
 
     afterEach(function (done) {
-        Page.destroy({
-          where: {
-            content: 'bar'
-          }
-        })
-        .then(function () {
-          done();
-        })
-        .catch(done);
-      });
+      Page.destroy({
+        where: {
+          content: 'bar'
+        }
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done);
+    });
   });
 
   describe('Hooks', function () {
-    it('it sets urlTitle based on title before validating');
+    var pagePromise;
+    beforeEach(function (done) {
+      pagePromise = Page.create({
+        title: 'fullstack_academy',
+        content: 'tdd workshop'
+      });
+      done();
+    });
+
+    it('it sets urlTitle based on title before validating', function () {
+      pagePromise
+      .then(function (page) {
+        expect(page.urlTitle).to.eql('fullstack_academy');
+      });
+    });
+
+    afterEach(function (done) {
+      Page.destroy({
+        where: {
+          content: 'bar'
+        }
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done);
+    });
   });
 
 });
