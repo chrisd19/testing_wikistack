@@ -225,7 +225,7 @@ describe('Page model', function () {
     afterEach(function () {
       return Page.destroy({
         where: {
-          content: 'bar'
+          title: 'fullstack_academy'
         }
       })
       .then(function () {
